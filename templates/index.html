@@ -104,11 +104,18 @@
                 var newAnnotation = {
                     x: xValue,
                     y: yValue,
-                    text: annotationText,
+                    text: annotationText+`(${xValue}, ${yValue})`,
                     xref: 'x' + (i + 1),
                     yref: 'y' + (i + 1),
                     showarrow: true,
                     arrowhead: 7,
+                    font: {
+                        size: 14,
+                        color: 'black',
+                    },
+                    bgcolor: 'rgba(255,255,255,0.9)',
+                    borderpad: 4,
+                    bordercolor: 'black',
                     ax: 0,
                     ay: -40
                 };
