@@ -1,0 +1,230 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Plotly Graphs</title>
+    <script src="https://cdn.plot.ly/plotly-latest.min.js"></script>
+    <style>
+        #annotations-container {
+            position: absolute;
+            top: 20px;  /* Gap from the top */
+            left: 20px; /* Gap from the left */
+            z-index: 10; /* Ensure it's above other content */
+        }
+        #annotations-table {
+            width: 500px;
+            border-collapse: collapse;
+            background-color: white;
+        }
+        #annotations-table th,
+        #annotations-table td {
+            border: 1px solid #ddd;
+            padding: 8px;
+            text-align: left;
+        }
+        #annotations-table th {
+            background-color: #f2f2f2;
+        }
+      </style>
+      
+</head>
+<body>
+
+<button id="streaming-button">Start Streaming</button>
+<button id="download-btn">Download Annotations</button>
+<div id="annotations-table">
+    <table id="annotations-list">
+      <thead>
+        <tr>
+          <th>Reading</th>
+          <th>Annotation Name</th>
+          <th>X Value</th>
+          <th>Y Value</th>
+        </tr>
+      </thead>
+      <tbody>
+        <!-- Annotation rows will be added here -->
+      </tbody>
+    </table>
+</div>
+<div id="graph-div"></div>
+<script>
+    var graphs = JSON.parse('{{ graphJSON | safe }}');
+    var streamingInterval;
+    var isStreaming = false;
+
+    function scrollGraph() {
+        var currentRange = graphs.layout.xaxis.range;
+        var newStart = new Date(currentRange[0]);
+        var newEnd = new Date(currentRange[1]);
+
+        newStart.setSeconds(newStart.getSeconds() + 1);
+        newEnd.setSeconds(newEnd.getSeconds() + 1);
+
+        var update = {
+            'xaxis.range': [newStart, newEnd],
+            'xaxis2.range': [newStart, newEnd],
+            'xaxis3.range': [newStart, newEnd]
+        };
+        Plotly.relayout('graph-div', update);
+    }
+
+    document.getElementById('streaming-button').onclick = function() {
+        if (!isStreaming) {
+            this.textContent = 'Stop Streaming';
+            streamingInterval = setInterval(scrollGraph, 1000); // Update the interval as necessary
+        } else {
+            this.textContent = 'Start Streaming';
+            clearInterval(streamingInterval);
+        }
+        isStreaming = !isStreaming;
+    };
+
+    Plotly.newPlot('graph-div', graphs.data, graphs.layout);
+
+    var graphDiv = document.getElementById('graph-div');
+
+    graphDiv.on('plotly_click', function(data) {
+        var clickedTrace = data.points[0].data;
+        var clickedPoint = data.points[0];
+
+        // Prompt the user to enter the annotation text
+        var annotationText = prompt('Enter the annotation text:', '');
+        if(annotationText === null || annotationText.trim() === '') return;
+
+        var xValue = clickedPoint.x;
+        var currentAnnotations = (graphDiv.layout.annotations || []).slice();
+
+        // Add annotations to all graphs at the clicked x-value
+        graphs.data.forEach(function(trace, i) {
+            var graphName = trace.name || 'Trace ' + (i + 1);  // Default to 'Trace N' if no name is set
+            var yValue = getYvalueAtX(trace, xValue);
+
+            if (yValue !== null) {
+                var newAnnotation = {
+                    x: xValue,
+                    y: yValue,
+                    text: annotationText,
+                    xref: 'x' + (i + 1),
+                    yref: 'y' + (i + 1),
+                    showarrow: true,
+                    arrowhead: 7,
+                    ax: 0,
+                    ay: -40
+                };
+                currentAnnotations.push(newAnnotation);
+
+                // Add annotation to the table, using the trace name
+                addToAnnotationsTable(graphName, annotationText, xValue, yValue);
+            }
+    });
+
+    // Update the plot with the new annotations
+    Plotly.relayout(graphDiv, {annotations: currentAnnotations});
+});
+    //     var pts = data.points[0];
+    //     var graphName = pts.data.name;  // This gets the name of the graph
+
+    //     var annotationText = prompt('Enter the annotation text:', '');
+    //     if(annotationText === null || annotationText.trim() === '') return;
+
+    //     var newAnnotation = {
+    //         x: pts.x,
+    //         y: pts.y,
+    //         text: annotationText+`(${pts.x}, ${pts.y})`, // Customize this text as needed
+    //         xref: pts.xaxis._id,  // Correctly reference the x-axis of the clicked subplot
+    //         yref: pts.yaxis._id,  // Correctly reference the y-axis of the clicked subplot
+    //         font: {
+    //             size: 14,
+    //             color: 'black',
+    //         },
+    //         bgcolor: 'rgba(255,255,255,0.9)',
+    //         borderpad: 4,
+    //         bordercolor: 'black',
+    //         showarrow: true,
+    //         arrowhead: 7,
+    //         ax: 0,
+    //         ay: -40
+    //     };
+
+    //     // Get the existing annotations
+    //     var currentAnnotations = (graphDiv.layout.annotations || []).slice();
+        
+    //     // Append the new annotation
+    //     currentAnnotations.push(newAnnotation);
+        
+    //     // Update the plot with the new annotations
+    //     Plotly.relayout(graphDiv, {
+    //         annotations: currentAnnotations
+    //     });
+
+    //     addToAnnotationsTable(graphName, annotationText, newAnnotation.x, newAnnotation.y);
+    // });
+
+    function getYvalueAtX(trace, xValue) {
+        // Find index by looking for the closest x value
+        var closestIndex = trace.x.reduce(function(prev, curr, index) {
+            return (Math.abs(curr - xValue) < Math.abs(trace.x[prev] - xValue) ? index : prev);
+        }, 0);
+        
+        return trace.y[closestIndex];
+    }
+
+    function addToAnnotationsTable(graphName, annotationText, x, y) {
+        var tableBody = document.getElementById('annotations-list').getElementsByTagName('tbody')[0];
+        var newRow = tableBody.insertRow();
+        var cell1 = newRow.insertCell(0);
+        var cell2 = newRow.insertCell(1);
+        var cell3 = newRow.insertCell(2);
+        var cell4 = newRow.insertCell(3);
+
+        cell1.innerHTML = graphName;
+        cell2.innerHTML = annotationText;
+        cell3.innerHTML = x;
+        cell4.innerHTML = y;
+    }
+
+    function tableToJson(table) {
+        var headers = [];
+        var data = [];
+
+        // Get column headers from the first row of the thead
+        var headerRow = table.querySelector('thead').rows[0];
+        for (var i = 0; i < headerRow.cells.length; i++) {
+            headers[i] = headerRow.cells[i].innerText.toLowerCase().replace(/ /gi, '');
+        }
+
+        // Get row data from the tbody section
+        var bodyRows = table.querySelector('tbody').rows;
+        for (var i = 0; i < bodyRows.length; i++) {
+            var rowData = {};
+            for (var j = 0; j < bodyRows[i].cells.length; j++) {
+                rowData[headers[j]] = bodyRows[i].cells[j].innerText;
+            }
+            data.push(rowData);
+        }
+
+        return JSON.stringify(data, null, 4); // Pretty-print the JSON
+}
+
+// Function to download data as a JSON file
+function downloadJson(jsonData, fileName) {
+    var dataStr = "data:text/json;charset=utf-8," + encodeURIComponent(jsonData);
+    var downloadAnchorNode = document.createElement('a');
+    downloadAnchorNode.setAttribute("href", dataStr);
+    downloadAnchorNode.setAttribute("download", fileName + ".json");
+    document.body.appendChild(downloadAnchorNode); // required for firefox
+    downloadAnchorNode.click();
+    downloadAnchorNode.remove();
+}
+
+// Click event listener for the download button
+document.getElementById('download-btn').addEventListener('click', function () {
+    var table = document.getElementById('annotations-table'); // Make sure the ID matches your table ID
+    var json = tableToJson(table);
+    downloadJson(json, 'annotations'); // The 'annotations' is the desired file name
+});
+
+</script>
+</body>
+</html>
