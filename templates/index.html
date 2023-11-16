@@ -2,47 +2,19 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <title>Parkinsons Project</title>
+    <title>Plotly Graphs</title>
     <script src="https://cdn.plot.ly/plotly-latest.min.js"></script>
-      <style>
-        body {
-            font-family: Arial, sans-serif;
-            background-color: #f4f4f4;
-            margin: 0;
-            padding: 20px;
-            color: #333;
-        }
-        .container {
-            max-width: 1200px;
-            margin: auto;
-            background: #fff;
-            padding: 20px;
-            box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
-        }
-        .button {
-            display: inline-block;
-            padding: 10px 20px;
-            font-size: 16px;
-            cursor: pointer;
-            text-align: center;
-            text-decoration: none;
-            outline: none;
-            color: #fff;
-            background-color: #4CAF50;
-            border: none;
-            border-radius: 15px;
-            box-shadow: 0 9px #999;
-        }
-        .button:hover {background-color: #3e8e41}
-        .button:active {
-            background-color: #3e8e41;
-            box-shadow: 0 5px #666;
-            transform: translateY(4px);
+    <style>
+        #annotations-container {
+            position: absolute;
+            top: 20px;  /* Gap from the top */
+            left: 20px; /* Gap from the left */
+            z-index: 10; /* Ensure it's above other content */
         }
         #annotations-table {
-            width: 100%;
+            width: 500px;
             border-collapse: collapse;
-            margin-top: 20px;
+            background-color: white;
         }
         #annotations-table th,
         #annotations-table td {
@@ -51,29 +23,13 @@
             text-align: left;
         }
         #annotations-table th {
-            background-color: brown;
-            color: white;
+            background-color: #f2f2f2;
         }
-        #graph-div {
-            margin-top: 20px;
-        }
-        .file-upload {
-            margin: 20px 0;
-        }
-    </style>
+      </style>
       
 </head>
 <body>
-<br>
-<button id="streaming-button">Start Streaming</button>
-<br><br>
-<form action="{{ url_for('upload_file') }}" method="post" enctype="multipart/form-data">
-    <input type="file" name="file" accept=".csv">
-    <input type="submit" value="Upload">
-</form>
-<br>
-<button id="download-btn">Download Annotations</button>
-<br><br>
+
 <div id="annotations-table">
     <table id="annotations-list">
       <thead>
@@ -103,7 +59,10 @@
 {% endif %}
 <button id="play/pause" onclick="playPause()">Play/Pause</button>
 
-<br>
+
+<button id="streaming-button">Start Streaming</button>
+<button id="download-btn">Download Annotations</button>
+
 <div id="graph-div"></div>
 <script>
     var graphs = JSON.parse('{{ graphJSON | safe }}');
@@ -172,18 +131,11 @@ function playPause() {
                 var newAnnotation = {
                     x: xValue,
                     y: yValue,
-                    text: annotationText+`(${xValue}, ${yValue})`,
+                    text: annotationText,
                     xref: 'x' + (i + 1),
                     yref: 'y' + (i + 1),
                     showarrow: true,
                     arrowhead: 7,
-                    font: {
-                        size: 14,
-                        color: 'black',
-                    },
-                    bgcolor: 'rgba(255,255,255,0.9)',
-                    borderpad: 4,
-                    bordercolor: 'black',
                     ax: 0,
                     ay: -40
                 };
@@ -197,6 +149,45 @@ function playPause() {
     // Update the plot with the new annotations
     Plotly.relayout(graphDiv, {annotations: currentAnnotations});
 });
+    //     var pts = data.points[0];
+    //     var graphName = pts.data.name;  // This gets the name of the graph
+
+    //     var annotationText = prompt('Enter the annotation text:', '');
+    //     if(annotationText === null || annotationText.trim() === '') return;
+
+    //     var newAnnotation = {
+    //         x: pts.x,
+    //         y: pts.y,
+    //         text: annotationText+`(${pts.x}, ${pts.y})`, // Customize this text as needed
+    //         xref: pts.xaxis._id,  // Correctly reference the x-axis of the clicked subplot
+    //         yref: pts.yaxis._id,  // Correctly reference the y-axis of the clicked subplot
+    //         font: {
+    //             size: 14,
+    //             color: 'black',
+    //         },
+    //         bgcolor: 'rgba(255,255,255,0.9)',
+    //         borderpad: 4,
+    //         bordercolor: 'black',
+    //         showarrow: true,
+    //         arrowhead: 7,
+    //         ax: 0,
+    //         ay: -40
+    //     };
+
+    //     // Get the existing annotations
+    //     var currentAnnotations = (graphDiv.layout.annotations || []).slice();
+        
+    //     // Append the new annotation
+    //     currentAnnotations.push(newAnnotation);
+        
+    //     // Update the plot with the new annotations
+    //     Plotly.relayout(graphDiv, {
+    //         annotations: currentAnnotations
+    //     });
+
+    //     addToAnnotationsTable(graphName, annotationText, newAnnotation.x, newAnnotation.y);
+    // });
+
     function getYvalueAtX(trace, xValue) {
         // Find index by looking for the closest x value
         var closestIndex = trace.x.reduce(function(prev, curr, index) {
