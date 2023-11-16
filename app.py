@@ -1,10 +1,10 @@
-from flask import Flask, render_template
+from flask import Flask, render_template, request
 import pandas as pd
 import plotly.graph_objs as go
 from plotly.subplots import make_subplots
 import plotly
 
-app = Flask(__name__)
+app = Flask(__name__,  static_folder='static')
 
 @app.route('/')
 def index():
@@ -42,7 +42,29 @@ def index():
     graphJSON = plotly.io.to_json(fig)
 
     # Render the template with the plot
-    return render_template('index.html', graphJSON=graphJSON)
+    return render_template('index.html', video_name=request.args.get('video_name'), graphJSON=graphJSON)
+
+ALLOWED_EXTENSIONS = ['mp4']
+
+def allowed_file(filename):
+    return '.' in filename and filename.rsplit('.', 1)[1].lower() in ALLOWED_EXTENSIONS
+
+@app.route('/', methods=['POST'])
+def upload():
+    if 'video' not in request.files:
+        return "No video found"
+    
+    video = request.files['video']
+
+    if video.filename == "":
+        return 'No video file selected'
+    
+    if video and allowed_file(video.filename):
+        video.save('static/videos/' + video.filename)
+        return render_template('index.html', video_name=video.filename)
+
+    
+    return "Invalid video file"
 
 if __name__ == '__main__':
     app.run(debug=True)

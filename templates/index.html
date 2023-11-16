@@ -30,8 +30,6 @@
 </head>
 <body>
 
-<button id="streaming-button">Start Streaming</button>
-<button id="download-btn">Download Annotations</button>
 <div id="annotations-table">
     <table id="annotations-list">
       <thead>
@@ -47,11 +45,40 @@
       </tbody>
     </table>
 </div>
+
+<form method="POST" enctype="multipart/form-data" action="/">
+    <input type="file" name="video">
+    <input type="submit" value="Upload">
+</form>
+{% if video_name %}
+<h2>Uploaded Video:</h2>
+<video id="myVideo" width="640" height="360" controls>
+    <source src="{{ url_for('static', filename='videos/' + video_name) }}" type="video/mp4">
+    Your browser does not support the video tag.
+</video>
+{% endif %}
+<button id="play/pause" onclick="playPause()">Play/Pause</button>
+
+
+<button id="streaming-button">Start Streaming</button>
+<button id="download-btn">Download Annotations</button>
+
 <div id="graph-div"></div>
 <script>
     var graphs = JSON.parse('{{ graphJSON | safe }}');
     var streamingInterval;
     var isStreaming = false;
+
+function playPause() {
+    var video = document.getElementById("myVideo");
+    debugger
+    if (video.paused) {
+        video.play();
+    } else {
+        video.pause();
+    }
+}
+
 
     function scrollGraph() {
         var currentRange = graphs.layout.xaxis.range;
