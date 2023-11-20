@@ -17,6 +17,11 @@ app.config['UPLOAD_FOLDER'] = UPLOAD_FOLDER
 def allowed_file(filename):
     return '.' in filename and filename.rsplit('.', 1)[1].lower() in ALLOWED_EXTENSIONS
 
+ALLOWED_VIDEO_EXTENSIONS = ['mp4']
+
+def allowed_videoFile(filename):
+    return '.' in filename and filename.rsplit('.', 1)[1].lower() in ALLOWED_VIDEO_EXTENSIONS
+
 @app.route('/')
 def index():
     # Create an empty plot
@@ -40,7 +45,28 @@ def index():
     # Render the template with the empty plot
     return render_template('index.html', graphJSON=graphJSON)
 
-@app.route('/upload', methods=['POST'])
+@app.route('/video', methods=['POST'])
+def uploadVideo():
+    if 'video' not in request.files:
+        return "No video found"
+    
+    video = request.files['video']
+
+    if video.filename == "":
+        return 'No video file selected'
+    
+    if video and allowed_videoFile(video.filename):
+        video.save('static/videos/' + video.filename)
+        global videoName 
+        global videoExists
+        videoExists = True
+        videoName = video.filename
+        return "vALID video file "
+    return "Invalid video file"
+
+
+
+@app.route('/', methods=['POST'])
 def upload_file():
     if 'file' not in request.files:
         return redirect(url_for('index'))
@@ -51,47 +77,88 @@ def upload_file():
         filename = secure_filename(file.filename)
         file_path = os.path.join(app.config['UPLOAD_FOLDER'], filename)
         file.save(file_path)
-        return redirect(url_for('display_graph', filename=filename))
+             # Read the CSV data into a pandas 
+        file_path = os.path.join(UPLOAD_FOLDER, filename)
+        df = pd.read_csv(file_path, parse_dates=['time'])
+
+        # Create a figure with subplots
+        fig = make_subplots(rows=3, cols=1, shared_xaxes=True, vertical_spacing=0.02)
+
+        # Add traces for each subplot
+        fig.add_trace(go.Scatter(x=df['time'], y=df['x_accel'], showlegend=False, hoverinfo='x+y', name='Accelerometer X'), row=1, col=1)
+        fig.add_trace(go.Scatter(x=df['time'], y=df['y_accel'], showlegend=False, hoverinfo='x+y', name='Accelerometer Y'), row=2, col=1)
+        fig.add_trace(go.Scatter(x=df['time'], y=df['z_accel'], showlegend=False, hoverinfo='x+y', name='Accelerometer Z'), row=3, col=1)
+
+        fig.update_xaxes(tickformat='%H:%M:%S.%L',showticklabels=True, row=1, col=1)
+        fig.update_xaxes(tickformat='%H:%M:%S.%L',showticklabels=True, row=2, col=1)
+        fig.update_xaxes(tickformat='%H:%M:%S.%L',showticklabels=True, row=3, col=1)
+
+        fig.update_xaxes(title_text="Timestamp", row=3, col=1)
+        fig.update_yaxes(title_text="Accelerometer X", row=1, col=1)
+        fig.update_yaxes(title_text="Accelerometer Y", row=2, col=1)
+        fig.update_yaxes(title_text="Accelerometer Z", row=3, col=1)
+
+        # Update layout to include the initial range
+        fig.update_layout(
+            height = 1000,
+            yaxis=dict(fixedrange=True),
+            yaxis2=dict(fixedrange=True),
+            yaxis3=dict(fixedrange=True),
+            hovermode='closest',
+            dragmode='pan',
+        )
+
+        # Convert the figure to JSON
+        graphJSON = plotly.io.to_json(fig)
+
+        # Render the template with the plot
+        if(videoExists):
+            return render_template('index.html', graphJSON=graphJSON, videoName=videoName )
+        else:
+            return render_template('index.html', graphJSON=graphJSON )
+
+      
+
+# @app.route('/graph/')
+# def display_graph(filename):
+#     # Read the CSV data into a pandas 
+#     file_path = os.path.join(UPLOAD_FOLDER, filename)
+#     df = pd.read_csv(file_path, parse_dates=['time'])
+
+#     # Create a figure with subplots
+#     fig = make_subplots(rows=3, cols=1, shared_xaxes=True, vertical_spacing=0.02)
+
+#     # Add traces for each subplot
+#     fig.add_trace(go.Scatter(x=df['time'], y=df['x_accel'], showlegend=False, hoverinfo='x+y', name='Accelerometer X'), row=1, col=1)
+#     fig.add_trace(go.Scatter(x=df['time'], y=df['y_accel'], showlegend=False, hoverinfo='x+y', name='Accelerometer Y'), row=2, col=1)
+#     fig.add_trace(go.Scatter(x=df['time'], y=df['z_accel'], showlegend=False, hoverinfo='x+y', name='Accelerometer Z'), row=3, col=1)
+
+#     fig.update_xaxes(tickformat='%H:%M:%S.%L',showticklabels=True, row=1, col=1)
+#     fig.update_xaxes(tickformat='%H:%M:%S.%L',showticklabels=True, row=2, col=1)
+#     fig.update_xaxes(tickformat='%H:%M:%S.%L',showticklabels=True, row=3, col=1)
+
+#     fig.update_xaxes(title_text="Timestamp", row=3, col=1)
+#     fig.update_yaxes(title_text="Accelerometer X", row=1, col=1)
+#     fig.update_yaxes(title_text="Accelerometer Y", row=2, col=1)
+#     fig.update_yaxes(title_text="Accelerometer Z", row=3, col=1)
+
+#     # Update layout to include the initial range
+#     fig.update_layout(
+#         height = 1000,
+#         yaxis=dict(fixedrange=True),
+#         yaxis2=dict(fixedrange=True),
+#         yaxis3=dict(fixedrange=True),
+#         hovermode='closest',
+#         dragmode='pan',
+#     )
+
+#     # Convert the figure to JSON
+#     graphJSON = plotly.io.to_json(fig)
+
+#     # Render the template with the plot
+#     return render_template('index.html', graphJSON=graphJSON)
 
 
-@app.route('/graph/<filename>')
-def display_graph(filename):
-    # Read the CSV data into a pandas 
-    file_path = os.path.join(UPLOAD_FOLDER, filename)
-    df = pd.read_csv(file_path, parse_dates=['time'])
-
-    # Create a figure with subplots
-    fig = make_subplots(rows=3, cols=1, shared_xaxes=True, vertical_spacing=0.02)
-
-    # Add traces for each subplot
-    fig.add_trace(go.Scatter(x=df['time'], y=df['x_accel'], showlegend=False, hoverinfo='x+y', name='Accelerometer X'), row=1, col=1)
-    fig.add_trace(go.Scatter(x=df['time'], y=df['y_accel'], showlegend=False, hoverinfo='x+y', name='Accelerometer Y'), row=2, col=1)
-    fig.add_trace(go.Scatter(x=df['time'], y=df['z_accel'], showlegend=False, hoverinfo='x+y', name='Accelerometer Z'), row=3, col=1)
-
-    fig.update_xaxes(tickformat='%H:%M:%S.%L',showticklabels=True, row=1, col=1)
-    fig.update_xaxes(tickformat='%H:%M:%S.%L',showticklabels=True, row=2, col=1)
-    fig.update_xaxes(tickformat='%H:%M:%S.%L',showticklabels=True, row=3, col=1)
-
-    fig.update_xaxes(title_text="Timestamp", row=3, col=1)
-    fig.update_yaxes(title_text="Accelerometer X", row=1, col=1)
-    fig.update_yaxes(title_text="Accelerometer Y", row=2, col=1)
-    fig.update_yaxes(title_text="Accelerometer Z", row=3, col=1)
-
-    # Update layout to include the initial range
-    fig.update_layout(
-        height = 1000,
-        yaxis=dict(fixedrange=True),
-        yaxis2=dict(fixedrange=True),
-        yaxis3=dict(fixedrange=True),
-        hovermode='closest',
-        dragmode='pan',
-    )
-
-    # Convert the figure to JSON
-    graphJSON = plotly.io.to_json(fig)
-
-    # Render the template with the plot
-    return render_template('index.html', graphJSON=graphJSON)
 
 if __name__ == '__main__':
     app.run(debug=True)

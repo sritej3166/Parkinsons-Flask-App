@@ -67,11 +67,27 @@
 <br>
 <button id="streaming-button">Start Streaming</button>
 <br><br>
+
 <form action="{{ url_for('upload_file') }}" method="post" enctype="multipart/form-data">
     <input type="file" name="file" accept=".csv">
     <input type="submit" value="Upload">
 </form>
 <br>
+
+
+<form method="POST" enctype="multipart/form-data"  action="{{ url_for('uploadVideo') }}">
+    <input type="file" name="video">
+    <input type="submit" value="Upload">
+</form>
+
+{% if video_name %}
+<h2>Uploaded Video:</h2>
+<video id="myVideo" width="640" height="360" controls>
+    <source src="{{ url_for('static', filename='videos/' + video_name) }}" type="video/mp4">
+    Your browser does not support the video tag.
+</video>
+{% endif %}
+
 <button id="download-btn">Download Annotations</button>
 <br><br>
 <div id="annotations-table">
