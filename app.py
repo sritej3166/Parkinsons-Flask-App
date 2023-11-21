@@ -32,7 +32,7 @@ def index():
     fig.update_yaxes(title_text="Accelerometer Z", row=3, col=1)
 
     # Update layout
-    fig.update_layout(height=1000, hovermode='closest', dragmode='pan')
+    fig.update_layout(height=800, hovermode='closest', dragmode='pan')
 
     # Convert the empty figure to JSON
     graphJSON = plotly.io.to_json(fig)
