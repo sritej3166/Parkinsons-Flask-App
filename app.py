@@ -40,21 +40,63 @@ def index():
     # Render the template with the empty plot
     return render_template('index.html', graphJSON=graphJSON)
 
-@app.route('/upload', methods=['POST'])
-def upload_file():
-    if 'file' not in request.files:
-        return redirect(url_for('index'))
-    file = request.files['file']
-    if file.filename == '':
-        return redirect(url_for('index'))
-    if file and allowed_file(file.filename):
-        filename = secure_filename(file.filename)
-        file_path = os.path.join(app.config['UPLOAD_FOLDER'], filename)
-        file.save(file_path)
-        return redirect(url_for('display_graph', filename=filename))
+
+ALLOWED_VIDEO_EXTENSIONS = ['mp4']
+
+def allowed_video_file(filename):
+    return '.' in filename and filename.rsplit('.', 1)[1].lower() in ALLOWED_VIDEO_EXTENSIONS
 
 
-@app.route('/graph/<filename>')
+@app.route('/', methods=['POST'])
+def upload():    
+    if 'file' in request.files:
+        file = request.files['file']
+        if file.filename == '':
+            return redirect(url_for('index'))
+        if file and allowed_file(file.filename):
+            filename = secure_filename(file.filename)
+            file_path = os.path.join(app.config['UPLOAD_FOLDER'], filename)
+            file.save(file_path)
+            graphJSON = display_graph(filename)
+            return render_template('index.html', graphJSON=graphJSON)
+
+    elif 'video' in request.files:
+        
+        if 'video' not in request.files:
+            return "No video found"
+    
+        video = request.files['video']
+
+        if video.filename == "":
+            return 'No video file selected'
+
+        if video and allowed_video_file(video.filename):
+            video.save('static/videos/' + video.filename)
+            # Update the graphJSON and render the template
+            graphJSON = display_graph('data.csv')
+            return render_template('index.html', graphJSON=graphJSON, video_name=video.filename)
+
+    return "Invalid file"
+
+
+# @app.route('/', methods=['POST'])
+# def u():
+#     if 'file' not in request.files:
+#         return redirect(url_for('index'))
+#     file = request.files['file']
+#     if file.filename == '':
+#         return redirect(url_for('index'))
+#     if file and allowed_file(file.filename):
+#         filename = secure_filename(file.filename)
+#         file_path = os.path.join(app.config['UPLOAD_FOLDER'], filename)
+#         file.save(file_path)
+#         graphJSON = display_graph(filename)
+#         return render_template('index.html', graphJSON=graphJSON)
+#         return redirect(url_for('display_graph', filename=filename))
+
+
+
+# @app.route('/graph/<filename>')
 def display_graph(filename):
     # Read the CSV data into a pandas 
     file_path = os.path.join(UPLOAD_FOLDER, filename)
@@ -91,7 +133,26 @@ def display_graph(filename):
     graphJSON = plotly.io.to_json(fig)
 
     # Render the template with the plot
-    return render_template('index.html', graphJSON=graphJSON)
+    return graphJSON
+
+
+@app.route('/', methods=['POST'])
+def u():
+    if 'video' not in request.files:
+        return "No video found"
+    
+    video = request.files['video']
+
+    if video.filename == "":
+        return 'No video file selected'
+    
+    if video and allowed_video_file(video.filename):
+        video.save('static/videos/' + video.filename)
+        return render_template('index.html', video_name=video.filename)
+
+    
+    return "Invalid video file"
+
 
 if __name__ == '__main__':
     app.run(debug=True)

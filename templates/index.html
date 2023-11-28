@@ -67,7 +67,7 @@
 <br>
 <button id="streaming-button">Start Streaming</button>
 <br><br>
-<form action="{{ url_for('upload_file') }}" method="post" enctype="multipart/form-data">
+<form action="{{ url_for('upload') }}" method="post" enctype="multipart/form-data">
     <input type="file" name="file" accept=".csv">
     <input type="submit" value="Upload">
 </form>
@@ -90,11 +90,30 @@
     </table>
 </div>
 <br>
+
+<form method="POST" enctype="multipart/form-data" action="{{ url_for('upload') }}">
+    <input type="file" name="video">
+    <input type="submit" value="Upload">
+</form>
+{% if video_name %}
+<h2>Uploaded Video:</h2>
+<video id="myVideo" width="640" height="360" controls>
+    <source src="{{ url_for('static', filename='videos/' + video_name) }}" type="video/mp4">
+    Your browser does not support the video tag.
+</video>
+{% endif %}
+<button id="toggleBtn">Play/Pause</button>
+
+
+
 <div id="graph-div"></div>
 <script>
     var graphs = JSON.parse('{{ graphJSON | safe }}');
     var streamingInterval;
     var isStreaming = false;
+    var video = document.getElementById("myVideo");
+    var toggleBtn = document.getElementById("toggleBtn");
+    
 
     function scrollGraph() {
         var currentRange = graphs.layout.xaxis.range;
@@ -114,6 +133,16 @@
 
     document.getElementById('streaming-button').onclick = function() {
         if (!isStreaming) {
+            debugger
+            if (video.paused) {
+                // If video is paused, play it
+                video.play();
+                toggleBtn.textContent = "Pause";
+            } else {
+                // If video is playing, pause it
+                video.pause();
+                toggleBtn.textContent = "Play";
+            }
             this.textContent = 'Stop Streaming';
             streamingInterval = setInterval(scrollGraph, 1000); // Update the interval as necessary
         } else {
