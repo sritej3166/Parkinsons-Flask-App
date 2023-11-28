@@ -1,5 +1,6 @@
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
     <meta charset="UTF-8">
     <title>Parkinsons Project</title>
@@ -12,6 +13,7 @@
             padding: 20px;
             color: #333;
         }
+
         .container {
             max-width: 1200px;
             margin: auto;
@@ -19,6 +21,7 @@
             padding: 20px;
             box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
         }
+
         .button {
             display: inline-block;
             padding: 10px 20px;
@@ -28,41 +31,49 @@
             text-decoration: none;
             outline: none;
             color: #fff;
-            background-color: #4CAF50;
+            background-color: brown;
             border: none;
             border-radius: 15px;
-            box-shadow: 0 9px #999;
         }
-        .button:hover {background-color: #3e8e41}
+
+        .button:hover {
+            background-color: grey;
+        }
+
         .button:active {
-            background-color: #3e8e41;
+            background-color: brown;
             box-shadow: 0 5px #666;
             transform: translateY(4px);
         }
+
         #annotations-table {
             width: 100%;
             border-collapse: collapse;
             margin-top: 20px;
         }
+
         #annotations-table th,
         #annotations-table td {
             border: 1px solid #ddd;
             padding: 8px;
             text-align: left;
         }
+
         #annotations-table th {
             background-color: brown;
             color: white;
         }
+
         #graph-div {
             margin-top: 20px;
         }
+
         .file-upload {
             margin: 20px 0;
         }
     </style>
-      
 </head>
+
 <body>
 <br>
 <button id="streaming-button">Start Streaming</button>
@@ -115,21 +126,21 @@
     var toggleBtn = document.getElementById("toggleBtn");
     
 
-    function scrollGraph() {
-        var currentRange = graphs.layout.xaxis.range;
-        var newStart = new Date(currentRange[0]);
-        var newEnd = new Date(currentRange[1]);
+        function scrollGraph() {
+            var currentRange = graphs.layout.xaxis.range;
+            var newStart = new Date(currentRange[0]);
+            var newEnd = new Date(currentRange[1]);
 
-        newStart.setSeconds(newStart.getSeconds() + 1);
-        newEnd.setSeconds(newEnd.getSeconds() + 1);
+            newStart.setSeconds(newStart.getSeconds() + 1);
+            newEnd.setSeconds(newEnd.getSeconds() + 1);
 
-        var update = {
-            'xaxis.range': [newStart, newEnd],
-            'xaxis2.range': [newStart, newEnd],
-            'xaxis3.range': [newStart, newEnd]
-        };
-        Plotly.relayout('graph-div', update);
-    }
+            var update = {
+                'xaxis.range': [newStart, newEnd],
+                'xaxis2.range': [newStart, newEnd],
+                'xaxis3.range': [newStart, newEnd]
+            };
+            Plotly.relayout('graph-div', update);
+        }
 
     document.getElementById('streaming-button').onclick = function() {
         if (!isStreaming) {
@@ -156,107 +167,115 @@
 
     var graphDiv = document.getElementById('graph-div');
 
-    graphDiv.on('plotly_click', function(data) {
-        var clickedTrace = data.points[0].data;
-        var clickedPoint = data.points[0];
+        graphDiv.on('plotly_click', function (data) {
+            var clickedTrace = data.points[0].data;
+            var clickedPoint = data.points[0];
 
-        // Prompt the user to enter the annotation text
-        var annotationText = prompt('Enter the annotation text:', '');
-        if(annotationText === null || annotationText.trim() === '') return;
+            // Prompt the user to enter the annotation text
+            var annotationText = prompt('Enter the annotation text:', '');
+            if (annotationText === null || annotationText.trim() === '') return;
 
-        var xValue = clickedPoint.x;
-        var currentAnnotations = (graphDiv.layout.annotations || []).slice();
+            var xValue = clickedPoint.x;
+            var currentAnnotations = (graphDiv.layout.annotations || []).slice();
 
-        // Add annotations to all graphs at the clicked x-value
-        graphs.data.forEach(function(trace, i) {
-            var graphName = trace.name || 'Trace ' + (i + 1);  // Default to 'Trace N' if no name is set
-            var yValue = getYvalueAtX(trace, xValue);
+            // Add annotations to all graphs at the clicked x-value
+            graphs.data.forEach(function (trace, i) {
+                var graphName = trace.name || 'Trace ' + (i + 1);  // Default to 'Trace N' if no name is set
+                var yValue = getYvalueAtX(trace, xValue);
 
-            if (yValue !== null) {
-                var newAnnotation = {
-                    x: xValue,
-                    y: yValue,
-                    text: annotationText+`(${xValue}, ${yValue})`,
-                    xref: 'x' + (i + 1),
-                    yref: 'y' + (i + 1),
-                    showarrow: true,
-                    arrowhead: 7,
-                    font: {
-                        size: 14,
-                        color: 'black',
-                    },
-                    bgcolor: 'rgba(255,255,255,0.9)',
-                    borderpad: 4,
-                    bordercolor: 'black',
-                    ax: 0,
-                    ay: -40
-                };
-                currentAnnotations.push(newAnnotation);
+                if (yValue !== null) {
+                    const parts = xValue.split(' ');
+                    // Further split the time part to get hours, minutes, and seconds
+                    const timeParts = parts[1].split(':');
+                    // Format and return the time in HH:MM:SS format
+                    xValueUpd =  `${timeParts[0]}:${timeParts[1]}:${timeParts[2].split('.')[0]}`;
 
-                // Add annotation to the table, using the trace name
-                addToAnnotationsTable(graphName, annotationText, xValue, yValue);
-            }
-    });
+                    yValueUpd = Math.round(yValue*10)/10;
+                    var newAnnotation = {
+                        x: xValue,
+                        y: yValue,
+                        text: annotationText + `(${xValueUpd}, ${yValueUpd})`,
+                        xref: 'x' + (i + 1),
+                        yref: 'y' + (i + 1),
+                        showarrow: true,
+                        arrowhead: 7,
+                        font: {
+                            size: 14,
+                            color: 'black',
+                        },
+                        bgcolor: 'rgba(255,255,255,0.9)',
+                        borderpad: 4,
+                        bordercolor: 'black',
+                        ax: 0,
+                        ay: -40
+                    };
+                    currentAnnotations.push(newAnnotation);
 
-    // Update the plot with the new annotations
-    Plotly.relayout(graphDiv, {annotations: currentAnnotations});
-});
-    function getYvalueAtX(trace, xValue) {
-        // Find index by looking for the closest x value
-        var closestIndex = trace.x.reduce(function(prev, curr, index) {
-            return (Math.abs(curr - xValue) < Math.abs(trace.x[prev] - xValue) ? index : prev);
-        }, 0);
-        
-        return trace.y[closestIndex];
-    }
+                    // Add annotation to the table, using the trace name
+                    addToAnnotationsTable(graphName, annotationText, xValueUpd, yValueUpd);
+                }
+            });
 
-    function addToAnnotationsTable(graphName, annotationText, x, y) {
-        var tableBody = document.getElementById('annotations-list').getElementsByTagName('tbody')[0];
-        var newRow = tableBody.insertRow();
-        var cell1 = newRow.insertCell(0);
-        var cell2 = newRow.insertCell(1);
-        var cell3 = newRow.insertCell(2);
-        var cell4 = newRow.insertCell(3);
+            // Update the plot with the new annotations
+            Plotly.relayout(graphDiv, { annotations: currentAnnotations });
+        });
 
-        cell1.innerHTML = graphName;
-        cell2.innerHTML = annotationText;
-        cell3.innerHTML = x;
-        cell4.innerHTML = y;
-    }
+        function getYvalueAtX(trace, xValue) {
+            // Find index by looking for the closest x value
+            var closestIndex = trace.x.reduce(function (prev, curr, index) {
+                return (Math.abs(curr - xValue) < Math.abs(trace.x[prev] - xValue) ? index : prev);
+            }, 0);
 
-    function tableToJson(table) {
-        var headers = [];
-        var data = [];
-
-        // Get column headers from the first row of the thead
-        var headerRow = table.querySelector('thead').rows[0];
-        for (var i = 0; i < headerRow.cells.length; i++) {
-            headers[i] = headerRow.cells[i].innerText.toLowerCase().replace(/ /gi, '');
+            return trace.y[closestIndex];
         }
 
-        // Get row data from the tbody section
-        var bodyRows = table.querySelector('tbody').rows;
-        for (var i = 0; i < bodyRows.length; i++) {
-            var rowData = {};
-            for (var j = 0; j < bodyRows[i].cells.length; j++) {
-                rowData[headers[j]] = bodyRows[i].cells[j].innerText;
-            }
-            data.push(rowData);
+        function addToAnnotationsTable(graphName, annotationText, x, y) {
+            var tableBody = document.getElementById('annotations-list').getElementsByTagName('tbody')[0];
+            var newRow = tableBody.insertRow();
+            var cell1 = newRow.insertCell(0);
+            var cell2 = newRow.insertCell(1);
+            var cell3 = newRow.insertCell(2);
+            var cell4 = newRow.insertCell(3);
+            
+            cell1.innerHTML = graphName;
+            cell2.innerHTML = annotationText;
+            cell3.innerHTML = x;
+            cell4.innerHTML = y;
         }
 
-        return JSON.stringify(data, null, 4); // Pretty-print the JSON
-}
+        function tableToJson(table) {
+            var headers = [];
+            var data = [];
 
-// Function to download data as a JSON file
-function downloadJson(jsonData, fileName) {
-    var dataStr = "data:text/json;charset=utf-8," + encodeURIComponent(jsonData);
-    var downloadAnchorNode = document.createElement('a');
-    downloadAnchorNode.setAttribute("href", dataStr);
-    downloadAnchorNode.setAttribute("download", fileName + ".json");
-    document.body.appendChild(downloadAnchorNode); // required for firefox
-    downloadAnchorNode.click();
-    downloadAnchorNode.remove();
-}
+            // Get column headers from the first row of the thead
+            var headerRow = table.querySelector('thead').rows[0];
+            for (var i = 0; i < headerRow.cells.length; i++) {
+                headers[i] = headerRow.cells[i].innerText.toLowerCase().replace(/ /gi, '');
+            }
+
+            // Get row data from the tbody section
+            var bodyRows = table.querySelector('tbody').rows;
+            for (var i = 0; i < bodyRows.length; i++) {
+                var rowData = {};
+                for (var j = 0; j < bodyRows[i].cells.length; j++) {
+                    rowData[headers[j]] = bodyRows[i].cells[j].innerText;
+                }
+                data.push(rowData);
+            }
+
+            return JSON.stringify(data, null, 4); // Pretty-print the JSON
+        }
+
+        // Function to download data as a JSON file
+        function downloadJson(jsonData, fileName) {
+            var dataStr = "data:text/json;charset=utf-8," + encodeURIComponent(jsonData);
+            var downloadAnchorNode = document.createElement('a');
+            downloadAnchorNode.setAttribute("href", dataStr);
+            downloadAnchorNode.setAttribute("download", fileName + ".json");
+            document.body.appendChild(downloadAnchorNode); // required for firefox
+            downloadAnchorNode.click();
+            downloadAnchorNode.remove();
+        }
 
 // Click event listener for the download button
 document.getElementById('download-btn').addEventListener('click', function () {
