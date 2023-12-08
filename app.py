@@ -32,7 +32,7 @@ def index():
     fig.update_yaxes(title_text="Accelerometer Z", row=3, col=1)
 
     # Update layout
-    fig.update_layout(height=1000, hovermode='closest', dragmode='pan')
+    fig.update_layout(height=800, hovermode='closest', dragmode='pan')
 
     # Convert the empty figure to JSON
     graphJSON = plotly.io.to_json(fig)
@@ -46,9 +46,11 @@ ALLOWED_VIDEO_EXTENSIONS = ['mp4']
 def allowed_video_file(filename):
     return '.' in filename and filename.rsplit('.', 1)[1].lower() in ALLOWED_VIDEO_EXTENSIONS
 
+newfilename =""
 
 @app.route('/', methods=['POST'])
 def upload():    
+    global newfilename
     if 'file' in request.files:
         file = request.files['file']
         if file.filename == '':
@@ -57,23 +59,20 @@ def upload():
             filename = secure_filename(file.filename)
             file_path = os.path.join(app.config['UPLOAD_FOLDER'], filename)
             file.save(file_path)
+            newfilename = filename
             graphJSON = display_graph(filename)
             return render_template('index.html', graphJSON=graphJSON)
 
     elif 'video' in request.files:
-        
         if 'video' not in request.files:
             return "No video found"
-    
         video = request.files['video']
-
         if video.filename == "":
             return 'No video file selected'
-
         if video and allowed_video_file(video.filename):
             video.save('static/videos/' + video.filename)
             # Update the graphJSON and render the template
-            graphJSON = display_graph('data.csv')
+            graphJSON = display_graph(newfilename)
             return render_template('index.html', graphJSON=graphJSON, video_name=video.filename)
 
     return "Invalid file"
