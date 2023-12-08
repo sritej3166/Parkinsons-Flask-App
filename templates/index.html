@@ -114,7 +114,7 @@
 {% if video_name %}
 <h2>Uploaded Video:</h2>
 <video id="myVideo" width="640" height="360" controls>
-    <source src="{{ url_for('static', filename='videos/' + video_name) }}" type="video/mp4">
+    <source src="{{ url_for('static', filename=' /' + video_name) }}" type="video/mp4">
     Your browser does not support the video tag.
 </video>
 {% endif %}
@@ -150,19 +150,19 @@
     document.getElementById('streaming-button').onclick = function() {
         debugger
         if (!isStreaming) {
-            debugger
             if (video.paused) {
                 // If video is paused, play it
                 video.play();
                 toggleBtn.textContent = "Pause";
-            } else {
-                // If video is playing, pause it
-                video.pause();
-                toggleBtn.textContent = "Play";
-            }
+            } 
             this.textContent = 'Stop Streaming';
             streamingInterval = setInterval(scrollGraph, 1000); // Update the interval as necessary
         } else {
+            if (!video.paused) {
+                // If video is paused, play it
+                video.pause();
+                toggleBtn.textContent = "Play";
+            }
             this.textContent = 'Start Streaming';
             clearInterval(streamingInterval);
         }
